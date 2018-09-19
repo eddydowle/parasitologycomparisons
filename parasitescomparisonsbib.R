@@ -67,7 +67,7 @@ setwd("~/Downloads/")
 file_list<-list.files(pattern='*).bib')
 file_list
 
-#D2<-readFiles(file_list)  #
+#D2<-readFiles(file_list)  #fuck sake
 
 test<-readFiles('savedrecs(1).bib','savedrecs(2).bib','savedrecs(3).bib','savedrecs(4).bib','savedrecs(5).bib','savedrecs(6).bib','savedrecs(7).bib','savedrecs(8).bib','savedrecs(9).bib','savedrecs(10).bib','savedrecs(11).bib','savedrecs(12).bib','savedrecs(13).bib','savedrecs(14).bib','savedrecs(15).bib','savedrecs(16).bib','savedrecs(17).bib')
 
