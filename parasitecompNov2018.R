@@ -306,30 +306,6 @@ ggplot(dmerged) +
   #scale_y_log10(breaks=c(0,1,10,100,200,300,400,500),limits = c(1,500)) #,limits = c(1,500) to drop negative dip induced by log scalling
 
 
-dmerged
-dmerged$ArticlesGenerallog<-log10(dmerged$ArticlesGeneral+1) #because we have 0
-dmerged$ArticlesParasiteslog<-log10(dmerged$ArticlesParasites+1)
-
-#overlay the figures
-?spline
-spline_int_log <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesParasiteslog))
-spline_int_log [spline_int_log <0] = 0 #unfortunetly creates a few negative spline values
-spline_int2_log <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesGenerallog))
-log10(spline_int) %>% .[spline_int_log <0] = 0
-spline_int_log
-
-
-ggplot(dmerged) + 
-  geom_point(aes(dmerged$Year,dmerged$ArticlesGenerallog), col='red',size = 1) +
-  geom_point(aes(dmerged$Year,dmerged$ArticlesParasiteslog), col='blue',size = 1) +
-  geom_line(data = spline_int2_log, aes(x,y)) +
-  geom_area(data = spline_int2_log, aes(x,y,fill='blue')) +
-  geom_line(data = spline_int_log, aes(x,y)) +
-  geom_area(data = spline_int_log, aes(x,y,fill='red')) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Log10 Article Number', fill="Subset") +
-  scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) 
 
 
 #####################################################

@@ -62,7 +62,7 @@ ggplot(S$AnnualProduction) +
 library(stringr)
 
 #######create table of counts#######
-setwd("~/Downloads/")
+setwd("~/Documents/CoAuthorMS/parasitebibsearch/")
 
 file_list<-list.files(pattern='*).bib')
 file_list
@@ -73,7 +73,7 @@ test<-readFiles('savedrecs(1).bib','savedrecs(2).bib','savedrecs(3).bib','savedr
 
 M2 <- convert2df(test, dbsource = "isi", format = "bibtex")
 
-
+?convert2df
 results2 <- biblioAnalysis(M2, sep = ";")
 results2
 S2 <- summary(object = results2, k = 10, pause = FALSE)
@@ -121,7 +121,7 @@ ggplot(dmerged) +
   geom_area(data = spline_int, aes(x,y,fill='red')) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x='Year', y='Article Number', fill="Subset") +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6))
 
 
