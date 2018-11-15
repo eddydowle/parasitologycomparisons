@@ -103,6 +103,13 @@ citations_ana.sum$AnnualProduction
 ggplot(citations_ana.sum$AnnualProduction, aes(`Year   `,Articles, group=1)) +
   geom_line(aes(`Year   `,Articles))
 
+ggplot(citations_ana.sum$AnnualProduction, aes(`Year   `,Articles, group=1)) +
+  geom_point(aes(citations_ana.sum$AnnualProduction$`Year   `,citations_ana.sum$AnnualProduction$Articles), size = 3,colour='red') +
+  geom_line(aes(`Year   `,Articles)) +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
 #create some splines to smooth the curve
 spline_int <- as.data.frame(spline(citations_ana.sum$AnnualProductio$`Year   `, citations_ana.sum$AnnualProduction$Articles))
 #add the splines in
@@ -119,16 +126,6 @@ ggplot(citations_ana.sum$AnnualProduction) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
   scale_fill_manual(labels = "Everyone", values = alpha("red",.6))
-
-ggplot(citations_ana.sum$AnnualProduction) + 
-  geom_point(aes(citations_ana.sum$AnnualProduction$`Year   `,citations_ana.sum$AnnualProduction$Articles), size = 1) +
-  geom_line(data = spline_int, aes(x,y)) +
-  geom_area(data = spline_int, aes(x,y,fill='red'),alpha=0.6) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y=expression(log[10](italic('Article Number'))), fill="Subset") +
-  scale_fill_manual(labels = "Everyone", values = alpha("red",.6))+
-  scale_y_log10(breaks=c(0,1,10,100,200,300,400,500)) #,limits = c(1,500) to drop negative dip induced by log scalling
 
 
 #you can obviously play around with different plots for various types of data etc
@@ -234,10 +231,20 @@ file_list
 para.citations<-readFilesmod(dput(as.character(file_list))) 
 para.citations <- convert2df(para.citations, dbsource = "isi", format = "bibtex")
 para.citations_ana <- biblioAnalysis(para.citations, sep = ";")
-para.citations_ana.sum <- summary(object = para.citations_ana, k = 10, pause = FALSE)
+para.citations_ana.sum <- summary(object = para.citations_ana, k = 20, pause = FALSE)
+write.table(para.citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozymeParasiteSearch',row.names=F,quote=F,sep='\t')
+
 para.citations_ana.sum 
 
+
 #plotting
+ggplot(para.citations_ana.sum$AnnualProduction, aes(`Year   `,Articles, group=1)) +
+  geom_point(aes(para.citations_ana.sum$AnnualProduction$`Year   `,para.citations_ana.sum$AnnualProduction$Articles), size = 3,colour='blue') +
+  geom_line(aes(`Year   `,Articles)) +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
 #create new splines
 spline_int2 <- as.data.frame(spline(para.citations_ana.sum$AnnualProductio$`Year   `, para.citations_ana.sum$AnnualProduction$Articles))
 ggplot(para.citations_ana.sum$AnnualProduction) + 
@@ -270,7 +277,17 @@ dmerged<-full_join(d1,d2,by='Year',all=TRUE)
 #NA should be 0
 dmerged[is.na(dmerged)] <- 0 
 dmerged
-#overlay the figures
+
+ggplot(dmerged) + 
+  geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral), col='red',size = 3) +
+  geom_point(aes(dmerged$Year,dmerged$ArticlesParasites), col='blue',size = 3) +
+  geom_line(aes(dmerged$Year,dmerged$ArticlesGeneral)) +
+  geom_line(aes(dmerged$Year,dmerged$ArticlesParasites)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") 
+
+#overlay the figures with splines
 spline_int <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesParasites))
 spline_int2 <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesGeneral))
 
@@ -289,7 +306,9 @@ ggplot(dmerged) +
   labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6))
 
-#because robert threw shade at my orginal figure
+#because robert didnt like my orginal figure
+#creating the spline for the parasites created a few very slightly negative values-Im just forcing these to zero here so they wont cause issues in the data transformation
+spline_int$y[spline_int$y < 0] <- 0
 ggplot(dmerged) + 
   geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral), col='red',size = 1) +
   geom_point(aes(dmerged$Year,dmerged$ArticlesParasites), col='blue',size = 1) +
@@ -299,12 +318,70 @@ ggplot(dmerged) +
   geom_area(data = spline_int, aes(x,y,fill='red')) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
-  #scale_y_log10(breaks=c(0,1,10,100,200,300,400,500),limits = c(1,500)) #,limits = c(1,500) to drop negative dip induced by log scalling
+#logging doesnt work well in this example as the counts are so low for parasitoloty that it forces a lot of negative values but it may be useful for other comparisons
+#ggplot(dmerged) + 
+#  geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral ), col='red',size = 1) +
+#  geom_point(aes(dmerged$Year,dmerged$ArticlesParasites), col='blue',size = 1) +
+#  geom_line(data = spline_int2, aes(x,y)) +
+#  geom_area(data = spline_int2, aes(x,y,fill='blue')) +
+#  geom_line(data = spline_int, aes(x,y)) +
+#  geom_area(data = spline_int, aes(x,y,fill='red')) +
+#  theme_bw() +
+#  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+#  labs(title="Allozymes",x='Year', y=expression(log[10](italic('Article Number'))), fill="Subset") +
+#  scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
+#  scale_y_log10(breaks=c(0,1,10,100,200,300,400,500),limits = c(1,500))
 
+#word clouds
+para.citations_ana.sum <- summary(object = para.citations_ana, k = 50, pause = FALSE)
+paraforwordcloud<-as.data.frame(cbind(as.character(trimws(para.citations_ana.sum$MostRelKeywords$`Author Keywords (DE)     `, which = c("both", "left", "right"))),as.integer(trimws(para.citations_ana.sum$MostRelKeywords$Articles, which = c("both", "left", "right")))),stringsAsFactors=FALSE)
+colnames(paraforwordcloud)<-c('keyword','count_papers')
+
+paraforwordcloud<-paraforwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS')
+paraforwordcloud.Corpus<-Corpus(VectorSource(paraforwordcloud[rep(row.names(paraforwordcloud), paraforwordcloud$count_papers), 1]))
+inspect(paraforwordcloud.Corpus)
+wordcloud(paraforwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
+
+#to treat them as phrases rather than words
+wordcloud(tolower(paraforwordcloud$keyword),as.numeric(paraforwordcloud$count_papers), colors="black",scale=c(2.5,.5))
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors=brewer.pal(8, "Dark2"),scale=c(2.5,.5))
+
+#depending on how the data comes down we can look at other things as well
+citations_df$TC
+para.citations$TC
+
+dmerged.violin<-data.frame(citationcount=para.citations$TC,type='Parasite Search')
+dmerged.violin<-rbind(dmerged.violin,data.frame(citationcount=citations_df$TC,type='General Search'))
+
+ggplot(dmerged.violin,aes(type,citationcount))  +
+  geom_violin(aes(fill = factor(type))) +
+  scale_y_continuous(trans='sqrt')+
+  labs(title="Citation count per article",x='Search Group', y=expression(sqrt(italic('Citaiton Count'))), fill="Subset") +
+  theme_bw()+
+  scale_fill_manual(values = alpha(c("red", "blue"),.6)) 
+  
+#could look at citation over the years
+para.citationperyear<-para.citations %>% select(.,PY,TC) %>% group_by(PY) %>% tally(TC)
+citationperyear<-citations_df %>% select(.,PY,TC) %>% group_by(PY) %>% tally(TC)
+colnames(para.citationperyear) <- c("Year", "CitationParasites")
+colnames(citationperyear) <- c("Year", "CitationGeneral")
+dmerged.citationPY<-full_join(citationperyear,para.citationperyear,by='Year')
+dmerged.citationPY[is.na(dmerged.citationPY)] <- 0 
+
+ggplot(dmerged) + 
+  geom_point(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationGeneral), col='red',size = 3) +
+  geom_point(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationParasites), col='blue',size = 3) +
+  geom_line(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationGeneral)) +
+  geom_line(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationParasites)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title="Citations Per Year",x='Year', y=expression(sqrt(italic('Citation Number'))), fill="Subset") +
+  scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
+  scale_y_continuous(trans='sqrt')
 
 
 
