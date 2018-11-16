@@ -258,6 +258,7 @@ wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
 #the code above treated each word as indepenent 
 #to treat them as phrases rather than words
 #Im not sure what the best way to treat a phase is for example 'gene flow'
+#phrases are easier because we can use the counts directly from the summary file
 #tolower because I think they look nicer lowercase
 wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors="black")
 #reset the scale so they fit
@@ -413,7 +414,9 @@ paraforwordcloud<-as.data.frame(cbind(as.character(trimws(para.citations_ana.sum
 colnames(paraforwordcloud)<-c('keyword','count_papers')
 
 paraforwordcloud<-paraforwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS',keyword!='ALLOZYME MARKERS',keyword!='ALLOZYME VARIATION')
-paraforwordcloud.Corpus<-Corpus(VectorSource(paraforwordcloud[rep(row.names(paraforwordcloud), paraforwordcloud$count_papers), 1]))
+paraforwordcloud<-paraforwordcloud %>%  mutate(fixkeyword=sub("GENETICS", "GENETIC", keyword)) 
+
+paraforwordcloud.Corpus<-Corpus(VectorSource(paraforwordcloud[rep(row.names(paraforwordcloud), paraforwordcloud$count_papers), 3]))
 inspect(paraforwordcloud.Corpus)
 wordcloud(paraforwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
 
