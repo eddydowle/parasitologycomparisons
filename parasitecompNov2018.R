@@ -1,11 +1,41 @@
 #EJD 
 #13/11/2018
 
-#things to add
-#box plot of citation
-#subseting the data by year spans
+#make R markdown
 
+#To get the files there are three options:
 
+#option one: full download from the web
+#from the website
+#put in search
+#hit add to marked list on first seach return page
+#put in 1 to the total number of searches returned to save them all
+#select marked list on the top left (should now have the number of records saved)
+#step 1 select the span of records to download 1:500, 501:1000 etc etc (500 at a time)
+#step 2 on output options choose 'select all' for information brought down
+#step 3 choose save to other file formats and then select bibTex
+#this is the most datarich option, it will bring down keywords, abstracts, citation information
+
+#option two: partial download usng the api 
+#the api is working and playing ball!? 
+#this will bring down paper titles, keywords, author afiliations and some other metadata but not citation information
+#you can get citations per year from online if its less than 10000 (see below)
+
+#option three: the api is 50 shades of useless and you're not going to download them 500 at a time
+#put your search in online
+#click the analyse tab
+#select publication years
+#scroll to the bottom of the page (bottom right)
+#select all data rows (up to 200,000-this works because we are looking at dates not individual records) 
+#hit download
+#this will download as analyze.txt
+#you are going to move it to the location you want
+#you are going to open it in a text editor (i.e. BBEdit, TextEdit, notepad etc)
+#you are going to change spaces to underscores and remove the random lines at the end of the file that are not data
+#you can download toher similar tables to what we will produce
+#by selecting the Countries/Regions tab you can download a table with that data
+#you can do a citation report and get citation per year, if its less than 10000
+#you cannot get keywords from this (as far as I can tell anyhow)
 
 #we are going to use a few pacakges which you will first have to install and then load
 #you will first need to install the package 'bibliometrix'
@@ -14,7 +44,7 @@ install.packages('tidyverse') #installs ggplot/dplyr allows pipes etc
 install.packages("wordcloud")
 install.packages('tm')
 install.packages('RColorBrewer')
-install.packages('slam') #might not be needed anymore but install incase
+
 
 #load package
 library(bibliometrix)
@@ -23,6 +53,9 @@ library(wordcloud)
 library(tm)
 library(RColorBrewer)
 #library(slam)
+
+##########OPTION ONE##############
+
 
 #set the working directory to where you have saved your downloaded .bib files
 setwd("~/Documents/CoAuthorMS/parasitebibsearch/")
@@ -44,9 +77,9 @@ readFilesmod<-function (...)
 #just going to read our files in:
 file_list<-list.files(pattern='*).bib',full.names=T)
 file_list
-citations<-readFilesmod(dput(as.character(file_list))) #just to get the format right for the read function
+citations<-readFilesmod(dput(as.character(file_list))) #generates a really large character you can view it just reads in the data as one set
 
-#okay our files are read in now we can change the format (currently its a huge character vector)
+#okay our files are read in now we can change the format (currently its a huge character vector) using a function out of the bibliometrix package
 #will take a while to run depending on citation number
 citations_df <- convert2df(citations, dbsource = "isi", format = "bibtex")
 
@@ -56,7 +89,6 @@ citations_df <- convert2df(citations, dbsource = "isi", format = "bibtex")
 #if you want to subset by a time frame this is the place to do that
 #so if we only wanted to look at records from 2000-2005 (yeer is under PY in the dataframe-publication year I guess)
 citations_df_2000_2005<-citations_df %>% filter(between(PY, 2000, 2005))
-#I think its going to be easier to do it here rather than once it turns into a bibliometrix
 
 #we are going to use the function biblioanalysis to turn out dataframe into a object of various data statistics
 #none of these statistics are particularily hard to generate or special-it just does it in one hit which is nice
@@ -86,8 +118,29 @@ citations_ana.sum$AnnualProduction
 #is the same as this on the orginal dataframe
 as.data.frame(table(citations_df$PY))
 
-#maybe we want to save the top 20 countries that have published for this dataset
+#maybe we want to save the top 10 countries that have published for this dataset
+citations_ana.sum <- summary(object = citations_ana, k = 10, pause = FALSE)
+
 citations_ana.sum$MostProdCountries
+
+#bar chart
+df_count<-data.frame(Country=as.character(citations_ana.sum$MostProdCountries$`Country  `),Article_count=as.integer(citations_ana.sum$MostProdCountries$Articles))
+ggplot(df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(10, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
+#with everyone else category
+vec<-as.data.frame(citations_ana$Countries,stringsAsFactors = F) %>% filter(!Tab %in% trimws(as.character(df_count$Country),which = c("both", "left", "right"))) %>% select(.,Freq) %>% sum()
+vec2<-data.frame(Country='OTHER',Article_count=as.integer(vec))
+df_count<-rbind(df_count,vec2)
+
+ggplot(df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(11, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
+
 write.table(citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozymeGeneralSearch',row.names=F,quote=F,sep='\t')
 
 #if we want to plot part of the data we can 
@@ -161,7 +214,7 @@ head(forwordcloud)
 
 
 #we want to drop the keywords we searched for from our dataframe
-forwordcloud<-forwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS')
+forwordcloud<-forwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS',keyword!='ALLOZYME VARIATION')
 
 #need to create a corpus which is a sort of list used by text mining packages in R
 #Im not totally sure what is special about it - but we need it!
@@ -190,17 +243,16 @@ wordcloud(forwordcloud.Corpus)
 #make it pretty
 #look up brewer.pal for colour pallets https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/colorPaletteCheatsheet.pdf
 wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
-
-#when you run it with the Keywords-Plus (ID) you will see that 'population' and 'populations' 
-#I've tried to fix this using the stemming function without much success
-#the stemming function is meant to look for the root of the word
-#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus,content_transformer(tolower)) #has to be a doc and this does that well lowering
-#forwordcloud.doc<- tm_map(forwordcloud.Corpus, stemDocument, "english")
-#it works but not great-we get rid of population and populations but end up with 'popul' and 'population'
-#wordcloud(forwordcloud.doc)
+#you can see that genetic and genetics come up
+#you can use the stemming function to look for the root of the word but it is kind of ugly
+forwordcloud.Corpus <- tm_map(forwordcloud.Corpus,content_transformer(tolower))
+forwordcloud.doc<- tm_map(forwordcloud.Corpus, stemDocument, "english")
+wordcloud(forwordcloud.doc,colors=brewer.pal(8, "Dark2"))
 
 #code to reduce redundancy by hand
-#forwordcloud %>%  mutate(fixkeyword=sub("POPULATIONS", "POPULATION", keyword)) 
+forwordcloud<-forwordcloud %>%  mutate(fixkeyword=sub("GENETICS", "GENETIC", keyword)) 
+forwordcloud.Corpus<-Corpus(VectorSource(forwordcloud[rep(row.names(forwordcloud), forwordcloud$count_papers), 3]))
+wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
 
 
 #the code above treated each word as indepenent 
@@ -217,10 +269,11 @@ wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), c
 wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors=brewer.pal(8, "Dark2"),family = "mono",font = 2,scale=c(2.5,.5))
 
 
-##########################################
-#other code for if api is working by then#
-##########################################
+################################################################
+############combing option one with option one##################
+################################################################
 
+#working with a second lot of .bib files downloaded 500 at a time from the website for the 2nd search
 
 setwd("~/Documents/CoAuthorMS/parasitebibsearch/parasitesonly/")
 
@@ -231,8 +284,26 @@ file_list
 para.citations<-readFilesmod(dput(as.character(file_list))) 
 para.citations <- convert2df(para.citations, dbsource = "isi", format = "bibtex")
 para.citations_ana <- biblioAnalysis(para.citations, sep = ";")
-para.citations_ana.sum <- summary(object = para.citations_ana, k = 20, pause = FALSE)
+para.citations_ana.sum <- summary(object = para.citations_ana, k = 10, pause = FALSE)
 write.table(para.citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozymeParasiteSearch',row.names=F,quote=F,sep='\t')
+
+#bar chart
+para.df_count<-data.frame(Country=as.character(para.citations_ana.sum$MostProdCountries$`Country  `),Article_count=as.integer(para.citations_ana.sum$MostProdCountries$Articles))
+ggplot(para.df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(10, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
+#with everyone else category
+vec<-as.data.frame(para.citations_ana$Countries,stringsAsFactors = F) %>% filter(!Tab %in% trimws(as.character(para.df_count$Country),which = c("both", "left", "right"))) %>% select(.,Freq) %>% sum()
+vec2<-data.frame(Country='OTHER',Article_count=as.integer(vec))
+para.df_count<-rbind(para.df_count,vec2)
+
+ggplot(para.df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(11, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
 
 para.citations_ana.sum 
 
@@ -319,7 +390,7 @@ ggplot(dmerged) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset") +
-  scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
+  scale_fill_manual(labels = c("General Search", "Parasites"), values = alpha(c("red", "blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
 #logging doesnt work well in this example as the counts are so low for parasitoloty that it forces a lot of negative values but it may be useful for other comparisons
@@ -341,7 +412,7 @@ para.citations_ana.sum <- summary(object = para.citations_ana, k = 50, pause = F
 paraforwordcloud<-as.data.frame(cbind(as.character(trimws(para.citations_ana.sum$MostRelKeywords$`Author Keywords (DE)     `, which = c("both", "left", "right"))),as.integer(trimws(para.citations_ana.sum$MostRelKeywords$Articles, which = c("both", "left", "right")))),stringsAsFactors=FALSE)
 colnames(paraforwordcloud)<-c('keyword','count_papers')
 
-paraforwordcloud<-paraforwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS')
+paraforwordcloud<-paraforwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS',keyword!='ALLOZYME MARKERS',keyword!='ALLOZYME VARIATION')
 paraforwordcloud.Corpus<-Corpus(VectorSource(paraforwordcloud[rep(row.names(paraforwordcloud), paraforwordcloud$count_papers), 1]))
 inspect(paraforwordcloud.Corpus)
 wordcloud(paraforwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
@@ -372,7 +443,7 @@ colnames(citationperyear) <- c("Year", "CitationGeneral")
 dmerged.citationPY<-full_join(citationperyear,para.citationperyear,by='Year')
 dmerged.citationPY[is.na(dmerged.citationPY)] <- 0 
 
-ggplot(dmerged) + 
+ggplot(dmerged.citationPY) + 
   geom_point(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationGeneral), col='red',size = 3) +
   geom_point(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationParasites), col='blue',size = 3) +
   geom_line(aes(dmerged.citationPY$Year,dmerged.citationPY$CitationGeneral)) +
@@ -383,27 +454,17 @@ ggplot(dmerged) +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
+################################################################
+#############combining option one with option two###############
+################################################################
 
+#################################################################
+#############combining option one with option three##############
+#################################################################
 
-#####################################################
-#code for if we are just copying numbers from online#
-#####################################################
-
-#okay so clarivate sucks and didnt get me api access quickly enough
-#we are going to bring the raw numbers in from online
-
-#you are going to run the search
-#click the analyse tab
-#select publication years
-#scrol to the bottom of the page (bottom right)
-#select all data rows (up to 200,000) 
-#hit download
-#this will download as analyze.txt
-#you are going to move it to the location you want
-#you are going to open it in a text editor (i.e. BBEdit, TextEdit etc)
-#you are going to change spaces to underscores and remove the random lines at the end of the file that are not data
-
-#this is basically file d1 from above
+#working with one lot of files brought down 500 at a time from website and comparing to a second search were we are going to bring the raw numbers in from online
+#using publication years file
+#the file downloaded here is basically the same file as d1 above
 
 #read in file
 d1v2<-read.table('../analyze.txt', sep="\t",header=T,row.names=NULL)
@@ -438,9 +499,9 @@ ggplot(dmerged) +
   labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6))
 
-#ta da same graph as before
+#same graph as before
 
-
+#I was thinking you could do a sankeyNetwork on the parasite stuff to break it up into medical and non medical or specific parasite groups
 
 
 
