@@ -1,0 +1,308 @@
+---
+title: "Parasite Comparison"
+author: "Eddy Dowle"
+date: "11/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(bibliometrix)
+library(tidyverse)
+library(wordcloud)
+library(tm)
+library(RColorBrewer)
+knitr::opts_knit$set(root.dir="~/Documents/CoAuthorMS/parasitebibsearch/parasitesonly/")
+```
+
+
+#To get the files there are three options:
+
+#Option one: full download from the web
+This is the most datarich option, it will bring down keywords, abstracts, citation information, country of origin etc
+
+1. Go to the WoS website put in search
+2. Note down the total number of searches returned
+3. Hit add to marked list on first seach return page
+4. Put in 1 : 'to the total number of searches returned' to save them all
+5. Select marked list on the top left (should now have the number of records saved)
+6. Step 1 select the span of records to download 1:500, 501:1000 etc etc (500 at a time)
+7. Step 2 on output options choose 'select all' for information brought down
+8. Step 3 choose save to other file formats and then select bibTex
+
+
+#Option two: partial download using the api 
+This will bring down paper titles, keywords, author afiliations and some other metadata but not citation information or the country information. You can get citations per year from online if its less than 10000 (see below).
+
+1. Open up XXXXX.py in a text editor (bbedit, notepad are good mac, window options)
+2. Edit the line that is called query = '' add between the quotes your search term as it reads in WoS 
+e.g. query = 'TS=( "HTS " OR "High throughput sequenc*" OR "shotgun"......' 
+3. If neccessary change the years. If you are on the genomic era you will want to limit this to 2005:2020. For the rest of you stick the search term into WoS online to identify the first year.
+4. Open up 'Terminal' (Mac) or 'Command Prompt' in windows. For windows see 
+https://www.pythoncentral.io/execute-python-script-file-shell/ for how to run a python script on Macs see Eddy
+5. This will build an output file called something super nice like 'WoS_Data_pipe_delimited.txt'
+
+
+#Option three: broadscale metadata
+You can get broad scale data from online without doing the 500 at a time-but not keywords and other metadata.
+
+1. Put your search into Wos
+2. Click the analyse tab
+3. Select publication years
+4. Scroll to the bottom of the page (bottom right)
+5. Select all data rows (up to 200,000-this works because we are looking at dates not individual records) 
+6. Hit download-this will download as analyze.txt
+7. Move it to the location you want for R
+8. Open it in a text editor (i.e. BBEdit, TextEdit, notepad etc)
+9. Change spaces to underscores and remove the random lines at the end of the file that are not data and save it under a better name
+10. Go back to WoS search select countries/regions tab and repeat steps 5:9 to download a file of the papers per countries
+You can do a citation report and get citation per year, if its less than 10000
+You cannot get keywords from this (as far as I can tell anyhow)
+
+#Analysing data that you download 500 at a time 
+First up set your R up by loading the required packages and setting the working directory. Change the path in setwd to where you have saved your files.
+
+If you failed to follow Eddy's instructions and did not install the packages already you will need to install them also.
+
+```{r setup2}
+#unhash this if you can't follow instructions
+#install.packages('bibliometrix') 
+#install.packages('tidyverse') 
+#install.packages("wordcloud")
+#install.packages('tm')
+#install.packages('RColorBrewer')
+
+#load packages
+library(bibliometrix)
+library(tidyverse)
+library(wordcloud)
+library(tm)
+library(RColorBrewer)
+
+setwd("~/Documents/CoAuthorMS/parasitebibsearch/parasitesonly/")
+```
+
+We are going to use the bibliometrix package to load our many files from the downloads in but first we are just going to modify a function from that package to streamline the read in of files (dont worry about what is going on here)
+
+```{r func}
+readFilesmod<-function (...) 
+{
+  arguments <- as.list(...) 
+  k = length(arguments)
+  D = list()
+  enc = "UTF-8"
+  for (i in 1:k) {
+    D[[i]] = suppressWarnings(readLines(arguments[[i]], encoding = enc))
+  }
+  D = unlist(D)
+  return(D)
+}
+```
+
+Now we are going to read our data in using the function from above. This will generate a huge character file which is horible to look at. We will use a function from the bibliometrix package to turn this into a table.
+
+```{r readfiles}
+file_list<-list.files(pattern='*.bib',full.names=T)
+citations<-readFilesmod(dput(as.character(file_list))) 
+citations_df <- convert2df(citations, dbsource = "isi", format = "bibtex")
+```
+
+Now we have a dataframe-much easier!
+You can view this to see the various feilds with the authors etc.
+
+We can also subset this dataset here: 
+If we only wanted to look at records from 2000-2005 (year is under PY in the dataframe-publication year).
+Or maybe we wanted to see how long it took for 10% of the publications to be released (10% were released by 1991)
+
+```{r subsetfiles}
+citations_df_2000_2005<-citations_df %>% filter(between(PY, 2000, 2005))
+citations_df %>% arrange(., PY) %>% slice(., round(nrow(citations_df)*0.1, digits = 0)) %>% select(.,PY)
+```
+
+We are going to use the function biblioanalysis to turn out dataframe into a object of various data statistics. None of these statistics are particularily hard to generate or special-it just does it in one hit which is nice! This function builds an object with various dataframes stored in it (23 dataframes). To access a dataframe you can call it directly. Remember you can view the help file for a function e.g. ?biblioAnalysis
+
+This transformation drops some information so we will go back to the orginal table every now and then-depending on what we want to do. 
+
+```{r createbiblioobject}
+citations_ana <- biblioAnalysis(citations_df, sep = ";")
+#you can call them directly with:
+#citations_ana$Years
+#They are just straight forward transformation, e.g.
+#citations_ana$TotalCitation
+#is just this column from the orginal dataframe
+#citations_df$TC
+```
+
+The handy thing about turning it into a bibliometrix object is that use can use the summary function on the bibliometrix object. You can set the number of entries to return by changing the k = X
+
+```{r bibliosum}
+citations_ana.sum <- summary(object = citations_ana, k = 10, pause = FALSE)
+```
+
+We may want to save the top 10 countries that have published for this dataset
+
+```{r topcountries}
+citations_ana.sum$MostProdCountries
+
+#bar chart
+df_count<-data.frame(Country=as.character(citations_ana.sum$MostProdCountries$`Country  `),Article_count=as.integer(citations_ana.sum$MostProdCountries$Articles))
+ggplot(df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(10, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
+#with everyone else category
+vec<-as.data.frame(citations_ana$Countries,stringsAsFactors = F) %>% filter(!Tab %in% trimws(as.character(df_count$Country),which = c("both", "left", "right"))) %>% select(.,Freq) %>% sum()
+vec2<-data.frame(Country='OTHER',Article_count=as.integer(vec))
+df_count<-rbind(df_count,vec2)
+
+ggplot(df_count, aes(Country, Article_count)) +
+  geom_bar(stat = "identity",fill=brewer.pal(11, "Spectral")) +
+  coord_flip() +
+  theme_bw() 
+
+#write it out as a table
+write.table(citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozymeGeneralSearch',row.names=F,quote=F,sep='\t')
+```
+
+We are interested in how many papers are produced per year so we can see that in the summary file. I have put a few graph options in here to get you started on some ideas.
+
+```{r prodyear}
+#citations_ana.sum$AnnualProduction
+citations_ana.sum$AnnualProduction %>% mutate(cumsum=cumsum(Articles),cumper=cumsum(Articles)/sum(Articles)*100)
+
+#basic line graph
+ggplot(citations_ana.sum$AnnualProduction, aes(`Year   `,Articles, group=1)) +
+  geom_line(aes(`Year   `,Articles))
+
+ggplot(citations_ana.sum$AnnualProduction, aes(`Year   `,Articles, group=1)) +
+  geom_point(aes(citations_ana.sum$AnnualProduction$`Year   `,citations_ana.sum$AnnualProduction$Articles), size = 3,colour='red') +
+  geom_line(aes(`Year   `,Articles)) +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+#create some splines to smooth the curve
+spline_int <- as.data.frame(spline(citations_ana.sum$AnnualProductio$`Year   `, citations_ana.sum$AnnualProduction$Articles))
+
+#add the splines in
+ggplot(citations_ana.sum$AnnualProduction) + 
+  geom_point(aes(citations_ana.sum$AnnualProduction$`Year   `,citations_ana.sum$AnnualProduction$Articles), size = 3) +
+  geom_line(data = spline_int, aes(x,y))
+
+#just make it look a bit prettier
+ggplot(citations_ana.sum$AnnualProduction) + 
+  geom_point(aes(citations_ana.sum$AnnualProduction$`Year   `,citations_ana.sum$AnnualProduction$Articles), size = 1) +
+  geom_line(data = spline_int, aes(x,y)) +
+  geom_area(data = spline_int, aes(x,y,fill='red'),alpha=0.6) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  scale_fill_manual(labels = "Parasites", values = alpha("red",.6))
+```
+
+We also want to do some word clouds. There is two ways to use word clouds. The first way is that we treat every word in the key word list individually. There is two types of key words. The first is the Author Keywords, the second is the 'Keywords-Plus' which is generated by WoS. Im going to use the Author Keywords but commented in is the lines for the 'Keywords-Plus'.
+
+For author keywords:
+citations_ana.sum\$MostRelKeywords$\`Author Keywords (DE)     `
+For WoS keywords:
+citations_ana.sum\$MostRelKeywords$\`Keywords-Plus (ID)    `
+
+Here we will build a new dataframe of our keywords and filter out the stuff we dont want before creating a corpus. Which is a sort of list used by text mining packages in R. Im not totally sure what is special about it - but we need it!
+
+
+```{r wordcloud}
+#change the summary to return more hits (before it was just 10 here it is 50)
+citations_ana.sum <- summary(object = citations_ana, k = 50, pause = FALSE)
+
+#careful with this table the biblio function has built a table which has two columns named 'Articles'
+head(citations_ana.sum$MostRelKeywords)
+colnames(citations_ana.sum$MostRelKeywords)
+
+#get rid of punctuation and create data frame
+forwordcloud<-as.data.frame(cbind(as.character(trimws(citations_ana.sum$MostRelKeywords$`Author Keywords (DE)     `, which = c("both", "left", "right"))),citations_ana.sum$MostRelKeywords[2]),stringsAsFactors=FALSE)
+colnames(forwordcloud)<-c('keyword','count_papers')
+
+#if we want to plot 'Keywords-Plus (ID)'
+#forwordcloud<-as.data.frame(cbind(as.character(trimws(citations_ana.sum$MostRelKeywords$`Keywords-Plus (ID)    `, which = c("both", "left", "right"))),citations_ana.sum$MostRelKeywords[4]),stringsAsFactors=FALSE)
+
+#dataframe:
+head(forwordcloud)
+
+#we want to drop the keywords we searched for from our dataframe
+forwordcloud<-forwordcloud %>% filter(.,keyword!='ALLOZYMES',keyword!='ALLOZYME',keyword!='ALLOZYME ELECTROPHORESIS',keyword!='ALLOZYME VARIATION',keyword!='ISOENZYME ELECTROPHORESIS',keyword!='ISOENZYMES',keyword!='ISOENZYME',keyword!='ELECTROPHORESIS',keyword!='ISOZYME',keyword!='ISOZYMES',keyword!='RAPD')
+
+#create corpus
+forwordcloud.Corpus<-Corpus(VectorSource(forwordcloud[rep(row.names(forwordcloud), forwordcloud$count_papers), 1]))
+
+#can use the function inspect to display the information on the corpus
+#inspect(forwordcloud.Corpus)
+
+#we dont have any special characters but we could remove funky characters if we have them
+#these will throw a warning but dont worry they dont mean anything here-its not dropping documents its because I used a vector source for the corpus and for whatever reason that generates a warning
+#forwordcloud.Corpus<- tm_map(forwordcloud.Corpus, removePunctuation)
+#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus, removeNumbers)
+#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus, stripWhitespace)
+#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus, remove_stopwords) #with package 'tau' 
+#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus,content_transformer(tolower))
+#qdap package offers other cleaning functions if we need them
+
+#create wordclouds
+wordcloud(forwordcloud.Corpus,scale=c(2.2,.6))
+
+#make it pretty-look up brewer.pal for colour pallets https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/colorPaletteCheatsheet.pdf
+
+wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"),scale=c(2.2,.6))
+```
+
+You can see that 'genetic' and 'genetics' come up. You can try to use the stemming function to look for the root of the word but I found this a bit ugly and ended up doing it by hand.
+
+```{r wordclouds1}
+#steming function
+#forwordcloud.Corpus <- tm_map(forwordcloud.Corpus,content_transformer(tolower))
+#forwordcloud.doc<- tm_map(forwordcloud.Corpus, stemDocument, "english")
+#wordcloud(forwordcloud.doc,colors=brewer.pal(8, "Dark2"))
+
+#code to reduce redundancy by hand
+forwordcloud<-forwordcloud %>%  mutate(fixkeyword=sub("GENETICS", "GENETIC", keyword)) 
+
+forwordcloud.Corpus<-Corpus(VectorSource(forwordcloud[rep(row.names(forwordcloud), forwordcloud$count_papers), 3]))
+
+wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"),scale=c(2.2,.6))
+
+#you can change the percentage that are rotated with the rot.per call
+wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"),rot.per=0,scale=c(2.0,.8))
+```
+
+The second way to make a word cloud is to consider the whole phrase a word. I think this makes more sense but it may not be as nice to look at.
+
+```{r wordclouds2}
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors="black",scale=c(2.1,.6))
+#reset the scale so they fit
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors="black",scale=c(2.1,.6))
+
+#colours and font
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors=brewer.pal(8, "Set1"),scale=c(2.1,.6))
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors=brewer.pal(8, "Dark2"),vfont=c("script","bold"),rot.per=0,scale=c(2.1,.6))
+wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors=brewer.pal(8, "Dark2"),family = "mono",font = 2,scale=c(2.1,.6))
+```
+
+#Okay we have our parasite plots but really what we want is to compare these to the general search terms
+
+This first set will be if you are comparing parasite searches that you downloaded 500 at a time to the publication per regions and publication per year files that you downloaded from the WoS website for the general searchers.
+
+
+
+#Comparing parasites to general searches via API download
+
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -58,7 +58,7 @@ library(RColorBrewer)
 
 
 #set the working directory to where you have saved your downloaded .bib files
-setwd("~/Documents/CoAuthorMS/parasitebibsearch/")
+setwd("~/Documents/CoAuthorMS/parasitebibsearch/parasitesonly/")
 
 #there is this clunky thing in the bibliometrix code so we are just going to modify their input function slightly to make it easier to read in our files
 readFilesmod<-function (...) 
@@ -75,7 +75,7 @@ readFilesmod<-function (...)
 }
 
 #just going to read our files in:
-file_list<-list.files(pattern='*).bib',full.names=T)
+file_list<-list.files(pattern='*.bib',full.names=T)
 file_list
 citations<-readFilesmod(dput(as.character(file_list))) #generates a really large character you can view it just reads in the data as one set
 
@@ -89,6 +89,8 @@ citations_df <- convert2df(citations, dbsource = "isi", format = "bibtex")
 #if you want to subset by a time frame this is the place to do that
 #so if we only wanted to look at records from 2000-2005 (yeer is under PY in the dataframe-publication year I guess)
 citations_df_2000_2005<-citations_df %>% filter(between(PY, 2000, 2005))
+citations_df %>% arrange(., PY) %>% slice(., round(nrow(citations_df)*0.1, digits = 0)) %>% select(.,PY)
+
 
 #we are going to use the function biblioanalysis to turn out dataframe into a object of various data statistics
 #none of these statistics are particularily hard to generate or special-it just does it in one hit which is nice
@@ -148,8 +150,8 @@ write.table(citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozym
 plot(x = citations_ana) #the bibliometrix plot overrides the base R plot function 
 
 #We are interested in how many papers are produced per year so we can see that in the summary file
-citations_ana.sum$AnnualProduction
-
+sum(citations_ana.sum$AnnualProduction$Articles)
+citations_ana.sum$AnnualProduction %>% mutate(cumsum=cumsum(Articles),cumper=cumsum(Articles)/sum(Articles)*100)
 
 #we also want things to be nice and flexible so Im switching to ggplot2 here for plotting
 #basic line graph
@@ -253,7 +255,7 @@ wordcloud(forwordcloud.doc,colors=brewer.pal(8, "Dark2"))
 forwordcloud<-forwordcloud %>%  mutate(fixkeyword=sub("GENETICS", "GENETIC", keyword)) 
 forwordcloud.Corpus<-Corpus(VectorSource(forwordcloud[rep(row.names(forwordcloud), forwordcloud$count_papers), 3]))
 wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"))
-
+?summary
 
 #the code above treated each word as indepenent 
 #to treat them as phrases rather than words
@@ -349,6 +351,8 @@ dmerged<-full_join(d1,d2,by='Year',all=TRUE)
 #NA should be 0
 dmerged[is.na(dmerged)] <- 0 
 dmerged
+
+#EDDY fix it into one x and y
 
 ggplot(dmerged) + 
   geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral), col='red',size = 3) +
