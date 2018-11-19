@@ -18,7 +18,7 @@ knitr::opts_knit$set(root.dir="~/Documents/CoAuthorMS/parasitebibsearch/parasite
 #To get the files there are three options:
 
 #Option one: full download from the web
-This is the most datarich option, it will bring down keywords, abstracts, citation information, country of origin etc
+This is the most data rich option, it will bring down keywords, abstracts, citation information, country of origin etc
 
 1. Go to the WoS website put in search
 2. Note down the total number of searches returned
@@ -118,18 +118,18 @@ citations_df_2000_2005<-citations_df %>% filter(between(PY, 2000, 2005))
 citations_df %>% arrange(., PY) %>% slice(., round(nrow(citations_df)*0.1, digits = 0)) %>% select(.,PY)
 ```
 
-We are going to use the function biblioanalysis to turn out dataframe into a object of various data statistics. None of these statistics are particularily hard to generate or special-it just does it in one hit which is nice! This function builds an object with various dataframes stored in it (23 dataframes). To access a dataframe you can call it directly. Remember you can view the help file for a function e.g. ?biblioAnalysis
+We are going to use the function biblioanalysis to turn our dataframe into a object of various tables. None of these statistics are particularily hard to generate or special-it just does it in one hit which is nice! This function builds an object with various dataframes stored in it (23 dataframes). To access a dataframe you can call it directly. Remember you can view the help file for a function e.g. ?biblioAnalysis
 
 This transformation drops some information so we will go back to the orginal table every now and then-depending on what we want to do. 
 
 ```{r createbiblioobject}
 citations_ana <- biblioAnalysis(citations_df, sep = ";")
 #you can call them directly with:
-#citations_ana$Years
-#They are just straight forward transformation, e.g.
-#citations_ana$TotalCitation
+head(citations_ana$Years)
+#Most of them are just straight forward transformation, e.g.
+head(citations_ana$TotalCitation)
 #is just this column from the orginal dataframe
-#citations_df$TC
+head(citations_df$TC)
 ```
 
 The handy thing about turning it into a bibliometrix object is that use can use the summary function on the bibliometrix object. You can set the number of entries to return by changing the k = X
@@ -276,8 +276,6 @@ wordcloud(forwordcloud.Corpus,colors=brewer.pal(8, "Dark2"),rot.per=0,scale=c(2.
 The second way to make a word cloud is to consider the whole phrase a word. I think this makes more sense but it may not be as nice to look at.
 
 ```{r wordclouds2}
-wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors="black",scale=c(2.1,.6))
-#reset the scale so they fit
 wordcloud(tolower(forwordcloud$keyword),as.numeric(forwordcloud$count_papers), colors="black",scale=c(2.1,.6))
 
 #colours and font
