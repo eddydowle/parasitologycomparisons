@@ -356,15 +356,15 @@ dmerged
 
 ggplot(dmerged) + 
   geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral), col='red',size = 3) +
-  geom_point(aes(dmerged$Year,dmerged$ArticlesParasites), col='blue',size = 3) +
+  geom_point(aes(dmerged$Year,dmerged$ArticlesParasite), col='blue',size = 3) +
   geom_line(aes(dmerged$Year,dmerged$ArticlesGeneral)) +
-  geom_line(aes(dmerged$Year,dmerged$ArticlesParasites)) +
+  geom_line(aes(dmerged$Year,dmerged$ArticlesParasite)) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") 
 
 #overlay the figures with splines
-spline_int <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesParasites))
+spline_int <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesParasite))
 spline_int2 <- as.data.frame(spline(dmerged$Year, dmerged$ArticlesGeneral))
 
 #because of the way the splines work they dont come out as exact values so we need to move the dates back to a integer
@@ -372,7 +372,7 @@ dmerged$Year<-as.integer(dmerged$Year)
 
 ggplot(dmerged) + 
   geom_point(aes(dmerged$Year,dmerged$ArticlesGeneral), col='red',size = 1) +
-  geom_point(aes(dmerged$Year,dmerged$ArticlesParasites), col='blue',size = 1) +
+  geom_point(aes(dmerged$Year,dmerged$ArticlesParasite), col='blue',size = 1) +
   geom_line(data = spline_int2, aes(x,y)) +
   geom_area(data = spline_int2, aes(x,y,fill='blue')) +
   geom_line(data = spline_int, aes(x,y)) +
