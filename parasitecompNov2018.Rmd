@@ -215,9 +215,6 @@ Here we will build a new dataframe of our keywords and filter out the stuff we d
 I have done this example of the allozyme data and have tried roughly to filter out method specific terms. If you are in the allozyme group you will need to remove this and re-do this properly as I did this very quickly and may have over or under filtered!!
 
 ```{r wordcloud}
-#change the summary to return more hits (before it was just 10 here it is 50)
-citations_ana.sum <- summary(object = citations_ana, k = 100, pause = FALSE)
-
 #careful with this table the biblio function has built a table which has two columns named 'Articles'
 head(citations_ana.sum$MostRelKeywords)
 colnames(citations_ana.sum$MostRelKeywords)
