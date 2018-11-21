@@ -103,6 +103,7 @@ write.table(citations_ana.sum$MostProdCountries,'TopProducingCountriesForAllozym
 citations_ana.sum$AnnualProduction
 #to see when XX % of papers were published
 table<-citations_ana.sum$AnnualProduction %>% mutate(cumsum=cumsum(Articles),cumper=cumsum(Articles)/sum(Articles)*100)
+View(table)
 write.table(table,'ProductionPerYearForAllozymeParasiteSearch',row.names=F,quote=F,sep='\t')
 
 #basic line graph
@@ -242,7 +243,7 @@ dmerged %>% select(.,ArticlesGeneral,ArticlesParasite,Year) %>% filter(.,Year!=2
   geom_line(aes(colour = factor(id))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset",color = "Article Type\n") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset",color = "Article Type\n") +
   scale_y_continuous(trans='sqrt')
 
 #for splines
@@ -260,7 +261,7 @@ ggplot(dmerged) +
   geom_area(data = spline_int, aes(x,y,fill='red')) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
@@ -324,7 +325,7 @@ dmerged %>% select(.,ArticlesGeneral,ArticlesParasite,Year) %>% filter(.,Year!=2
   geom_line(aes(colour = factor(id))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset",color = "Article Type\n") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset",color = "Article Type\n") +
   scale_y_continuous(trans='sqrt')
 
 #for splines
@@ -342,7 +343,7 @@ ggplot(dmerged) +
   geom_area(data = spline_int, aes(x,y,fill='red')) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites"), values = alpha(c("red", "blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
@@ -478,7 +479,7 @@ dmerged3 %>% select(.,ArticlesGeneral,ArticlesParasite,ArticlesParasite_nonmed,Y
   geom_line(aes(colour = factor(id))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset",color = "Article Type\n") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset",color = "Article Type\n") +
   scale_y_continuous(trans='sqrt')
 
 #for splines
@@ -501,7 +502,7 @@ ggplot(dmerged3) +
   geom_area(data = spline_int3, aes(x,y,fill='green')) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Article Number', fill="Subset") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Article Number'))), fill="Subset") +
   scale_fill_manual(labels = c("Everyone", "Parasites not medical","Parasites"), values = alpha(c("red", "green","blue"),.6)) +
   scale_y_continuous(trans='sqrt')
 
@@ -538,7 +539,7 @@ dmerged.citationPY %>% filter(.,Year!=2019) %>% tidyr::gather("id", "value", 2:3
   geom_line(aes(colour = factor(id))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title="Allozymes",x='Year', y='Citation Count', fill="Subset",color = "Article Type\n") +
+  labs(title="Allozymes",x='Year', y=expression(sqrt(italic('Citation Count'))), fill="Subset",color = "Article Type\n") +
   scale_y_continuous(trans='sqrt')
 
 
