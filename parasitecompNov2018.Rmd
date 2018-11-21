@@ -456,7 +456,7 @@ df_api_Keywords_count<-df_api_Keywords_count %>%  mutate(fixkeyword=sub("Genetic
 
 #colours and font
 wordcloud(tolower(df_api_Keywords_count$fixkeyword),as.numeric(df_api_Keywords_count$n), colors=brewer.pal(8, "Set1"),max.words=30,scale=c(1.4,.6))
-wordcloud(tolower(df_api_Keywords_count$fixkeyword),as.numeric(df_api_Keywords_count$n), colors=brewer.pal(8, "Dark2"),vfont=c("script","bold"),max.words=30,rot.per=0,scale=c(1.4,.6))
+wordcloud(tolower(df_api_Keywords_count$fixkeyword),as.numeric(df_api_Keywords_count$n), colors=brewer.pal(8, "Dark2"),vfont=c("script","bold"),max.words=30,rot.per=0,scale=c(1.6,.6))
 wordcloud(tolower(df_api_Keywords_count$fixkeyword),as.numeric(df_api_Keywords_count$n), colors=brewer.pal(8, "Dark2"),family = "mono",font = 2,max.words=30,scale=c(1.4,.6))
 ```
 
