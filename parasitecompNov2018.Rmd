@@ -40,7 +40,7 @@ e.g. query = 'TS=( "HTS " OR "High throughput sequenc*" OR "shotgun"...... AND W
 If you are copying directly from the excel file you are going to have to copy the special characters (",*) and find/replace them in the text editor. Microsoft does not write in plain text and python does not approve of this. 
 3. If neccessary change the years. If you are on the genomic era you will want to limit this to 2005:2020. For the rest of you stick the search term into WoS online to identify the first year.
 4. Open up 'Terminal' (Mac) or 'Command Prompt' in windows. For windows see 
-https://www.pythoncentral.io/execute-python-script-file-shell/ for how to run a python script on Macs see Eddy
+https://www.pythoncentral.io/execute-python-script-file-shell/ for how to run a python script on Macs see Eddy (I can help with windows too)
 5. This will build an output file called something like 'WoS_API_download.txt'
 
 
